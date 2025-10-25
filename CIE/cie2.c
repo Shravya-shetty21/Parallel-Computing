@@ -1,28 +1,28 @@
-//Write a omp program to transform each element with A[i] = 3 * A[i]+2. using #pragma omp parallel for schedule (dynamic,2) then switch to (static,2)
-//int A1[6]={1,2,3,4,5,6}//dynamic,2
-//int A1[6]={1,2,3,4,5,6};//static ,2
+#include <mpi.h>
 #include <stdio.h>
-#include <omp.h>
 
-int main() {
-    int A1[6] = {1, 2, 3, 4, 5, 6}; // For dynamic scheduling
-    int A2[6] = {1, 2, 3, 4, 5, 6}; // For static scheduling
+int main(int argc, char* argv[]) {
+    int rank, size;
+    int number;
 
-    // Dynamic scheduling with chunk size 2
-    #pragma omp parallel for schedule(dynamic, 2)
-    for (int i = 0; i < 6; i++) {
-        A1[i] = 3 * A1[i] + 2;
-        printf("Dynamic: Thread %d processed A1[%d] = %d\n", omp_get_thread_num(), i, A1[i]);
+    MPI_Init(&argc, &argv);                 
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);  
+    MPI_Comm_size(MPI_COMM_WORLD, &size);   
+
+    if (size < 2) {
+        printf("This program requires at least 2 processes.\n");
+        MPI_Abort(MPI_COMM_WORLD, 1);
     }
 
-    printf("\n");
-
-    // Static scheduling with chunk size 2
-    #pragma omp parallel for schedule(static, 2)
-    for (int i = 0; i < 6; i++) {
-        A2[i] = 3 * A2[i] + 2;
-        printf("Static: Thread %d processed A2[%d] = %d\n", omp_get_thread_num(), i, A2[i]);
+    if (rank == 0) {
+        number = 5; 
+        MPI_Send(&number, 1, MPI_INT, 1, 0, MPI_COMM_WORLD);
+    } else if (rank == 1) {
+        MPI_Recv(&number, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        printf("Process 1 received %d\n", number);
+        printf("Process 1 multiplied value = %d\n", number * 2);
     }
 
+    MPI_Finalize();
     return 0;
 }
